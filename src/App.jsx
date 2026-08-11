@@ -6,6 +6,7 @@ function App() {
   return (
    <>
    <Canvas>
+     // Implements the dog style
     <Dog />
    </Canvas>
    </>

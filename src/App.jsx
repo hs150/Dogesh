@@ -6,17 +6,17 @@ import Dog from './components/Dog'
 import './App.css'
 
 const projects = [
-  { title: 'Tomorrowland', year: '2020 — ongoing', image: '/tommorowland.png', matcap: 19 },
-  { title: 'Navy Pier', year: '2020 — ongoing', image: '/navy-pier.png', matcap: 8 },
-  { title: 'MSI Chicago', year: '2020 — ongoing', image: '/msi-chicago.png', matcap: 9 },
-  { title: 'This Was Louise’s Phone', year: '2019', image: '/phone.png', matcap: 12 },
-  { title: 'KIKK Festival 2018', year: '2018', image: '/kikk.png', matcap: 10 },
-  { title: 'The Kennedy Center', year: '2018', image: '/kennedy.png', matcap: 8 },
-  { title: 'Royal Opera of Wallonia', year: '2017', image: '/opera.png', matcap: 13 },
+  ['tomorrowland', 'Tomorrowland', 19],
+  ['navy-pier', 'Navy Pier', 8],
+  ['msi-chicago', 'MSI Chicago', 9],
+  ['phone', 'This Was Louise’s Phone', 12],
+  ['kikk', 'KIKK Festival 2018', 10],
+  ['kennedy', 'The Kennedy Center', 8],
+  ['opera', 'Royal Opera Of Wallonia', 13],
 ]
 
 function CanvasLoader() {
-  return <Html center><span className="canvas-loader">Loading the experience…</span></Html>
+  return <Html center><span className="canvas-loader">Loading…</span></Html>
 }
 
 function App() {
@@ -24,77 +24,44 @@ function App() {
   const [scrollProgress, setScrollProgress] = useState(0)
 
   useEffect(() => {
-    let frameId = 0
-    const updateScroll = () => {
-      cancelAnimationFrame(frameId)
-      frameId = requestAnimationFrame(() => {
-        const maximumScroll = document.documentElement.scrollHeight - window.innerHeight
-        setScrollProgress(maximumScroll > 0 ? window.scrollY / maximumScroll : 0)
-      })
+    const update = () => {
+      const availableScroll = document.documentElement.scrollHeight - window.innerHeight
+      setScrollProgress(availableScroll ? window.scrollY / availableScroll : 0)
     }
-    updateScroll()
-    window.addEventListener('scroll', updateScroll, { passive: true })
-    window.addEventListener('resize', updateScroll)
-    return () => {
-      cancelAnimationFrame(frameId)
-      window.removeEventListener('scroll', updateScroll)
-      window.removeEventListener('resize', updateScroll)
-    }
+    update()
+    window.addEventListener('scroll', update, { passive: true })
+    window.addEventListener('resize', update)
+    return () => { window.removeEventListener('scroll', update); window.removeEventListener('resize', update) }
   }, [])
 
-  const selectedMatcap = activeProject === null ? 2 : projects[activeProject].matcap
-
   return (
-    <main className="site-shell">
-      <div className="scene-backdrop" aria-hidden="true" />
-      <div className="project-media" aria-hidden="true">
-        {projects.map((project, index) => <img alt="" className={activeProject === index ? 'is-visible' : ''} key={project.title} src={project.image} />)}
+    <main>
+      <div className="images" aria-hidden="true">
+        {projects.map(([id]) => <img className={activeProject === id ? 'visible' : ''} id={id} key={id} src={`/${id === 'tomorrowland' ? 'tommorowland' : id}.png`} alt="" />)}
       </div>
-      <Canvas camera={{ position: [0, 0, 0.72] }} className="scene-canvas" dpr={[1, 1.75]} fallback={<p className="webgl-fallback">This interactive experience needs WebGL.</p>} gl={{ antialias: true, alpha: true, outputColorSpace: THREE.SRGBColorSpace, toneMapping: THREE.ReinhardToneMapping }}>
-        <Suspense fallback={<CanvasLoader />}>
-          <Dog matcapIndex={selectedMatcap} scrollProgress={scrollProgress} />
-        </Suspense>
+      <Canvas id="canvas-elem" camera={{ position: [0, 0, 0.55] }} dpr={[1, 1.75]} gl={{ antialias: true, alpha: true, outputColorSpace: THREE.SRGBColorSpace, toneMapping: THREE.ReinhardToneMapping }}>
+        <Suspense fallback={<CanvasLoader />}><Dog matcapIndex={activeProject ? projects.find(([id]) => id === activeProject)[2] : 2} scrollProgress={scrollProgress} /></Suspense>
       </Canvas>
-
-      <div className="page-content">
-        <section className="hero" id="top">
-          <nav className="site-nav" aria-label="Primary navigation">
-            <a className="wordmark" href="#top" aria-label="Dog Studio — home">DOG<span>®</span></a>
-            <a className="showreel-link" href="#work"><span aria-hidden="true">↗</span> Selected work</a>
-            <a className="menu-link" href="#contact">Contact <span aria-hidden="true">+</span></a>
-          </nav>
-          <div className="hero-copy">
-            <p className="eyebrow">Independent creative practice</p>
-            <h1>We make<br />good things.</h1>
-          </div>
-          <div className="hero-footer">
-            <span className="scroll-cue">Scroll to explore <i aria-hidden="true">↓</i></span>
-            <p>Dog Studio brings art, design and technology together to make digital experiences with character.</p>
-          </div>
-          <div className="line line-one" aria-hidden="true" />
-          <div className="line line-two" aria-hidden="true" />
-        </section>
-
-        <section className="work-section" id="work" aria-labelledby="work-heading">
-          <div className="section-heading">
-            <p className="eyebrow">Selected projects</p>
-            <h2 id="work-heading">Work with a<br />point of view.</h2>
-          </div>
-          <div className="project-list">
-            {projects.map((project, index) => (
-              <button aria-label={`Preview ${project.title}`} className={`project-row ${activeProject === index ? 'is-active' : ''}`} key={project.title} onBlur={() => setActiveProject(null)} onFocus={() => setActiveProject(index)} onMouseEnter={() => setActiveProject(index)} onMouseLeave={() => setActiveProject(null)} type="button">
-                <span>{project.year}</span><strong>{project.title}</strong><i aria-hidden="true">↗</i>
-              </button>
-            ))}
-          </div>
-        </section>
-
-        <section className="closing-section" id="contact">
-          <p className="eyebrow">Have a bold idea?</p>
-          <h2>Let’s give it<br /><em>a pulse.</em></h2>
-          <a className="contact-link" href="mailto:hello@dogstudio.example">Start a conversation <span aria-hidden="true">↗</span></a>
-        </section>
-      </div>
+      <section id="section-1">
+        <nav>
+          <div className="nav-elem"><span className="dogstudio-logo">DOG<br />STUDIO<sup>®</sup></span></div>
+          <div className="nav-elem"><i className="ri-arrow-right-s-line" /> Our Show reel</div>
+          <div className="nav-elem"><i className="ri-menu-3-line" /></div>
+        </nav>
+        <div className="middle"><div className="left"><h1>WE <br /> Make <br /> Good <br />Shit</h1></div><div className="right" /></div>
+        <div className="bottom"><div className="left" /><div className="right"><p>Dogstudio is a multidisciplinary <br />creative studio at the intersection <br />of art, design and technology.</p></div></div>
+        <div className="first-line" /><div className="second-line" />
+      </section>
+      <section id="section-2">
+        <div className="titles">
+          {projects.map(([id, title]) => (
+            <div className="title" img-title={id} key={id} onFocus={() => setActiveProject(id)} onMouseEnter={() => setActiveProject(id)} onMouseLeave={() => setActiveProject(null)} tabIndex="0">
+              <small>2020 - ONGOING</small><h1>{title}</h1>
+            </div>
+          ))}
+        </div>
+      </section>
+      <section id="section-3" />
     </main>
   )
 }

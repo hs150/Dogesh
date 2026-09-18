@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useState } from 'react'
+import { Suspense, useState } from 'react'
 import * as THREE from 'three'
 import { Canvas } from '@react-three/fiber'
 import { Html } from '@react-three/drei'
@@ -21,26 +21,13 @@ function CanvasLoader() {
 
 function App() {
   const [activeProject, setActiveProject] = useState(null)
-  const [scrollProgress, setScrollProgress] = useState(0)
-
-  useEffect(() => {
-    const update = () => {
-      const availableScroll = document.documentElement.scrollHeight - window.innerHeight
-      setScrollProgress(availableScroll ? window.scrollY / availableScroll : 0)
-    }
-    update()
-    window.addEventListener('scroll', update, { passive: true })
-    window.addEventListener('resize', update)
-    return () => { window.removeEventListener('scroll', update); window.removeEventListener('resize', update) }
-  }, [])
-
   return (
     <main>
       <div className="images" aria-hidden="true">
         {projects.map(([id]) => <img className={activeProject === id ? 'visible' : ''} id={id} key={id} src={`/${id === 'tomorrowland' ? 'tommorowland' : id}.png`} alt="" />)}
       </div>
       <Canvas id="canvas-elem" camera={{ position: [0, 0, 0.55] }} dpr={[1, 1.75]} gl={{ antialias: true, alpha: true, outputColorSpace: THREE.SRGBColorSpace, toneMapping: THREE.ReinhardToneMapping }}>
-        <Suspense fallback={<CanvasLoader />}><Dog matcapIndex={activeProject ? projects.find(([id]) => id === activeProject)[2] : 2} scrollProgress={scrollProgress} /></Suspense>
+        <Suspense fallback={<CanvasLoader />}><Dog matcapIndex={activeProject ? projects.find(([id]) => id === activeProject)[2] : 2} /></Suspense>
       </Canvas>
       <section id="section-1">
         <nav>

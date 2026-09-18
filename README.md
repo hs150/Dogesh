@@ -1,78 +1,25 @@
-# 🐶 Dogesh
+# Dog Studio
 
-An interactive 3D dog viewer built with React, Vite, and Three.js. Drop a Draco-compressed GLB model into a scene and orbit around it right in the browser.
+A responsive, scroll-driven 3D portfolio experience built with React, Vite and React Three Fiber. The animated GLB model changes its matcap treatment as visitors explore the project list.
 
-## Features
-
-- 3D model rendering with [react-three-fiber](https://docs.pmnd.rs/react-three-fiber) and [drei](https://github.com/pmndrs/drei)
-- Draco-compressed `.glb` model loading for a smaller asset footprint
-- Orbit controls for rotating, panning, and zooming around the model
-- Directional lighting for a clean, well-lit render
-
-## Tech Stack
-
-- [React 19](https://react.dev/)
-- [Vite](https://vitejs.dev/) with the React Compiler enabled
-- [Three.js](https://threejs.org/)
-- [@react-three/fiber](https://github.com/pmndrs/react-three-fiber) & [@react-three/drei](https://github.com/pmndrs/drei)
-- ESLint for linting
-
-## Getting Started
-
-### Prerequisites
-
-- Node.js (LTS recommended)
-- npm
-
-### Installation
+## Run locally
 
 ```bash
-git clone https://github.com/hs150/Dogesh.git
-cd Dogesh
 npm install
-```
-
-### Development
-
-```bash
 npm run dev
 ```
 
-This starts the Vite dev server with hot module replacement.
-
-### Build
-
-```bash
-npm run build
-```
-
-### Preview production build
-
-```bash
-npm run preview
-```
-
-### Lint
+## Validate a production build
 
 ```bash
 npm run lint
+npm run build
 ```
 
-## Project Structure
+## Included experience
 
-```
-Dogesh/
-├── public/
-│   └── model/
-│       └── dog.drc.glb    # Draco-compressed 3D dog model
-├── src/
-│   ├── components/
-│   │   └── Dog.jsx        # Loads and renders the 3D model with orbit controls
-│   ├── App.jsx             # Canvas setup
-│   └── main.jsx             # App entry point
-└── package.json
-```
-
-## License
-
-No license specified yet.
+- Fixed WebGL scene with an animated, scroll-choreographed model
+- Project-hover imagery and matching material changes
+- Responsive, keyboard-accessible project list
+- Loading and WebGL fallback states
+- Reduced-motion friendly transitions

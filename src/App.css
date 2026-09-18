@@ -1,28 +1,134 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
-html, body, #root { background-color: black; color: whitesmoke; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; width: 100%; }
-main { position: relative; }
-section { min-height: 100vh; position: relative; z-index: 2; }
-#canvas-elem { height: 100vh !important; left: 0; position: fixed !important; top: 0; width: 100vw !important; z-index: 1; }
-#canvas-elem::after { background-image: url('/background-l.png'); background-repeat: no-repeat; background-size: cover; content: ''; height: 100%; left: 0; position: absolute; top: 0; transition: all .3s linear; width: 100%; z-index: -1; }
-#section-1 { --gap: 5rem; position: relative; }
-#section-1 nav { align-items: center; display: flex; justify-content: space-between; padding: 3.5rem 2.5rem 1.5rem; }
+
+html, body, #root {
+  background: #000;
+  color: whitesmoke;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  min-height: 100%;
+  width: 100%;
+}
+
+body { overflow-x: hidden; }
+main { min-height: 300vh; position: relative; }
+
+.scene-backdrop,
+.images,
+#canvas-elem {
+  height: 100vh;
+  inset: 0;
+  position: fixed !important;
+  width: 100vw;
+}
+
+.scene-backdrop {
+  background: url('/background-l.png') center / cover no-repeat;
+  opacity: 1;
+  transition: opacity .3s linear;
+  z-index: 0;
+}
+
+.images { pointer-events: none; z-index: 1; }
+.images img {
+  height: 100%;
+  inset: 0;
+  object-fit: cover;
+  opacity: 0;
+  position: absolute;
+  transition: opacity .3s linear;
+  width: 100%;
+}
+.images img.visible { opacity: 1; }
+
+main.is-project-active .scene-backdrop { opacity: 0; }
+
+#canvas-elem {
+  pointer-events: none !important;
+  z-index: 2;
+}
+
+.canvas-loader {
+  color: whitesmoke;
+  font-size: .8rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+section { min-height: 100vh; pointer-events: auto; position: relative; z-index: 3; }
+
+#section-1 { --gap: 5rem; }
+
+#section-1 nav {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  padding: 3.5rem 2.5rem 1.5rem;
+}
+
 #section-1 .nav-elem:nth-child(2) i { color: red; }
 #section-1 .nav-elem:nth-child(3) { font-size: 1.45rem; }
-#section-1 nav svg { height: 100%; max-width: 5rem; width: 100%; }
-#section-1 .middle { display: flex; gap: var(--gap); }
-#section-1 .middle .left, #section-1 .middle .right, #section-1 .bottom .left, #section-1 .bottom .right { width: 50%; }
-#section-1 .middle .left { align-items: center; display: flex; justify-content: flex-end; padding-block: 7rem; }
-#section-1 h1 { font-size: 5rem; line-height: .8; text-align: right; }
+#section-1 nav svg { display: block; height: 100%; max-width: 5rem; width: 100%; }
+
+#section-1 .middle,
 #section-1 .bottom { display: flex; gap: var(--gap); }
+
+#section-1 .middle .left,
+#section-1 .middle .right,
+#section-1 .bottom .left,
+#section-1 .bottom .right { width: 50%; }
+
+#section-1 .middle .left {
+  align-items: center;
+  display: flex;
+  justify-content: flex-end;
+  padding-block: 7rem;
+}
+
+#section-1 h1 {
+  font-size: 5rem;
+  line-height: .8;
+  text-align: right;
+}
+
 #section-1 .bottom .right p { font-weight: 200; line-height: 1.5; }
-#section-1 .first-line { background-color: rgba(255, 0, 0, .396); height: 1px; position: absolute; transform: rotate(45deg) translate(0, -17rem); width: 35rem; }
-#section-1 .second-line { background-color: rgba(255, 0, 0, .396); height: 1px; position: absolute; right: 12%; top: 28%; transform: rotate(135deg); width: 10rem; }
-#section-2 .titles { display: flex; flex-direction: column; margin-block: 10rem; padding-left: 17rem; }
-#section-2 .titles .title { cursor: pointer; display: flex; gap: 4rem; opacity: .3; padding-block: 2rem; transition: all .3s linear; }
-#section-2 .titles .title:hover, #section-2 .titles .title:focus { opacity: 1; outline: none; }
+
+#section-1 .first-line,
+#section-1 .second-line {
+  background-color: rgba(255, 0, 0, .396);
+  height: 1px;
+  position: absolute;
+}
+
+#section-1 .first-line { transform: rotate(45deg) translate(0, -17rem); width: 35rem; }
+#section-1 .second-line { right: 12%; top: 28%; transform: rotate(135deg); width: 10rem; }
+
+#section-2 .titles {
+  display: flex;
+  flex-direction: column;
+  margin-block: 10rem;
+  padding-left: 17rem;
+}
+
+#section-2 .titles .title {
+  cursor: pointer;
+  display: flex;
+  gap: 4rem;
+  opacity: .3;
+  padding-block: 2rem;
+  transition: opacity .3s linear;
+}
+
+#section-2 .titles .title:hover,
+#section-2 .titles .title:focus { opacity: 1; outline: none; }
+
 #section-2 .titles .title h1 { font-size: 4.5rem; font-weight: 100; line-height: 1; }
 #section-2 .titles .title small { font-size: .5rem; margin-top: .6rem; }
-main:has(#section-2 .title:hover) #canvas-elem::after, main:has(#section-2 .title:focus) #canvas-elem::after { opacity: 0; }
-.images { height: 100%; left: 0; position: fixed; top: 0; width: 100%; }
-.images img { height: 100%; left: 0; object-fit: cover; opacity: 0; position: absolute; top: 0; transition: all .3s linear; width: 100%; }
-.images img.visible { opacity: 1; }
+
+@media (max-width: 700px) {
+  #section-1 nav { padding: 2rem 1.25rem; }
+  #section-1 h1 { font-size: 3.4rem; }
+  #section-1 .middle .left { padding-block: 7rem; }
+  #section-1 .bottom .right { padding-right: 1.25rem; }
+  #section-2 .titles { margin-block: 6rem; padding-left: 1.25rem; }
+  #section-2 .titles .title { gap: 1rem; padding-block: 1.4rem; }
+  #section-2 .titles .title h1 { font-size: 2rem; }
+}

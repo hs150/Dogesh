@@ -1,20 +1,26 @@
-import { useEffect, useMemo, useRef } from 'react'
+﻿import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
-import { useGLTF, useTexture, useAnimations } from '@react-three/drei'
+import { useAnimations, useGLTF, useTexture } from '@react-three/drei'
 import gsap from 'gsap'
-import { useGSAP } from '@gsap/react'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 
 gsap.registerPlugin(ScrollTrigger)
 
-const texturePaths = [
+const MATCAP_PATHS = Array.from(
+  { length: 20 },
+  (_, index) => `/matcap/mat-${index + 1}.png`,
+)
+
+const TEXTURE_PATHS = [
   '/dog_normals.jpg',
   '/branches_diffuse.jpeg',
   '/branches_normals.jpeg',
-  ...Array.from({ length: 20 }, (_, index) => `/matcap/mat-${index + 1}.png`),
+  ...MATCAP_PATHS,
 ]
 
-function copyTexture(source, colorSpace) {
+const INITIAL_ROTATION_Y = Math.PI / 3.9
+
+function cloneTexture(source, colorSpace) {
   const texture = source.clone()
   texture.colorSpace = colorSpace
   texture.needsUpdate = true
@@ -22,108 +28,404 @@ function copyTexture(source, colorSpace) {
 }
 
 function Dog({ matcapIndex }) {
-  const { animations, scene } = useGLTF('/models/dog.drc.glb')
-  const textures = useTexture(texturePaths)
-  const [dogNormal, branchDiffuse, branchNormal] = textures
-  const matcaps = useMemo(() => textures.slice(3), [textures])
-  const initialMatcap = matcaps[1]
+  const rig = useRef()
+
   const transition = useRef({
-    uMatcapTexture1: { value: initialMatcap },
-    uMatcapTexture2: { value: initialMatcap },
-    uProgress: { value: 1 },
+    from: { value: null },
+    to: { value: null },
+    progress: { value: 1 },
   })
 
+  const { scene, animations } = useGLTF('/models/dog.drc.glb')
+
+  const textures = useTexture(TEXTURE_PATHS)
+
+  const [dogNormal, branchDiffuse, branchNormal] = textures
+
+  const matcaps = useMemo(
+    () => textures.slice(3),
+    [textures],
+  )
+
+  const transitionMatcaps = useMemo(
+    () =>
+      matcaps.map((matcap) =>
+        cloneTexture(matcap, THREE.SRGBColorSpace),
+      ),
+    [matcaps],
+  )
+
+  // ==================================================
+  // MATERIALS
+  // ==================================================
+
   const materials = useMemo(() => {
-    const dogNormalTexture = copyTexture(dogNormal, THREE.NoColorSpace)
-    const branchNormalTexture = copyTexture(branchNormal, THREE.NoColorSpace)
-    const branchTexture = copyTexture(branchDiffuse, THREE.SRGBColorSpace)
-    const dogMatcap = copyTexture(initialMatcap, THREE.SRGBColorSpace)
-    const branchMatcap = copyTexture(matcaps[18], THREE.SRGBColorSpace)
-    const dog = new THREE.MeshMatcapMaterial({ matcap: dogMatcap, normalMap: dogNormalTexture })
-    dog.onBeforeCompile = (shader) => {
-      shader.uniforms.uMatcapTexture1 = transition.current.uMatcapTexture1
-      shader.uniforms.uMatcapTexture2 = transition.current.uMatcapTexture2
-      shader.uniforms.uProgress = transition.current.uProgress
-      shader.fragmentShader = shader.fragmentShader.replace('void main() {', `
-        uniform sampler2D uMatcapTexture1;
-        uniform sampler2D uMatcapTexture2;
-        uniform float uProgress;
-        void main() {
-      `)
-      shader.fragmentShader = shader.fragmentShader.replace('vec4 matcapColor = texture2D( matcap, uv );', `
-        vec4 matcapColor1 = texture2D( uMatcapTexture1, uv );
-        vec4 matcapColor2 = texture2D( uMatcapTexture2, uv );
-        float transitionFactor = 0.2;
-        float progress = smoothstep(uProgress - transitionFactor, uProgress, (vViewPosition.x + vViewPosition.y) * 0.5 + 0.5);
-        vec4 matcapColor = mix(matcapColor2, matcapColor1, progress);
-      `)
+    const dogNormalMap = cloneTexture(
+      dogNormal,
+      THREE.NoColorSpace,
+    )
+
+    dogNormalMap.flipY = false
+    dogNormalMap.needsUpdate = true
+
+    const branchMap = cloneTexture(
+      branchDiffuse,
+      THREE.SRGBColorSpace,
+    )
+
+    const branchNormalMap = cloneTexture(
+      branchNormal,
+      THREE.NoColorSpace,
+    )
+
+    const dogMaterial = new THREE.MeshMatcapMaterial({
+      matcap: transitionMatcaps[1],
+      normalMap: dogNormalMap,
+    })
+
+    dogMaterial.onBeforeCompile = (shader) => {
+      shader.uniforms.uMatcapFrom =
+        transition.current.from
+
+      shader.uniforms.uMatcapTo =
+        transition.current.to
+
+      shader.uniforms.uMatcapProgress =
+        transition.current.progress
+
+      shader.fragmentShader =
+        shader.fragmentShader.replace(
+          'void main() {',
+          `
+          uniform sampler2D uMatcapFrom;
+          uniform sampler2D uMatcapTo;
+          uniform float uMatcapProgress;
+
+          void main() {
+          `,
+        )
+
+      shader.fragmentShader =
+        shader.fragmentShader.replace(
+          'vec4 matcapColor = texture2D( matcap, uv );',
+          `
+          vec4 matcapFrom =
+            texture2D(uMatcapFrom, uv);
+
+          vec4 matcapTo =
+            texture2D(uMatcapTo, uv);
+
+          float edge = smoothstep(
+            uMatcapProgress - 0.2,
+            uMatcapProgress,
+            (vViewPosition.x + vViewPosition.y)
+              * 0.5
+              + 0.5
+          );
+
+          vec4 matcapColor =
+            mix(matcapTo, matcapFrom, edge);
+          `,
+        )
     }
+
+    const branchMaterial =
+      new THREE.MeshMatcapMaterial({
+        map: branchMap,
+        matcap: transitionMatcaps[18],
+        normalMap: branchNormalMap,
+      })
+
     return {
-      dog,
-      branches: new THREE.MeshMatcapMaterial({ map: branchTexture, matcap: branchMatcap, normalMap: branchNormalTexture }),
+      dog: dogMaterial,
+      branches: branchMaterial,
+
+      textures: [
+        dogNormalMap,
+        branchMap,
+        branchNormalMap,
+      ],
     }
-  }, [branchDiffuse, branchNormal, dogNormal, initialMatcap, matcaps])
+  }, [
+    dogNormal,
+    branchDiffuse,
+    branchNormal,
+    transitionMatcaps,
+  ])
+
+  // ==================================================
+  // CLONE + CENTER THE ACTUAL WOLF
+  // ==================================================
 
   const model = useMemo(() => {
     const cloned = scene.clone(true)
-    // Frame the visible geometry inside the hero's central content area.
-    cloned.position.set(0.18, -0.55, 0)
-    cloned.scale.setScalar(0.7)
-    cloned.rotation.set(0, Math.PI / 3.9, 0)
+
     cloned.traverse((child) => {
       if (!child.isMesh) return
-      child.material = child.name.includes('DOG') ? materials.dog : materials.branches
+
+      child.material = child.name.includes('DOG')
+        ? materials.dog
+        : materials.branches
+
+      child.frustumCulled = false
     })
+
+    // --------------------------------------------------
+    // Find visible DOG geometry bounds
+    // --------------------------------------------------
+
+    const dogBox = new THREE.Box3()
+
+    cloned.updateMatrixWorld(true)
+
+    cloned.traverse((child) => {
+      if (!child.isMesh) return
+
+      if (child.name.includes('DOG')) {
+        dogBox.expandByObject(child)
+      }
+    })
+
+    // --------------------------------------------------
+    // Move actual wolf geometry toward its origin
+    // --------------------------------------------------
+
+    if (!dogBox.isEmpty()) {
+      const center = dogBox.getCenter(
+        new THREE.Vector3(),
+      )
+
+      cloned.position.x -= center.x
+      cloned.position.y -= center.y
+    }
+
     return cloned
   }, [materials, scene])
-  const { actions } = useAnimations(animations, model)
+
+  // ==================================================
+  // ANIMATION
+  // ==================================================
+
+  const { actions } = useAnimations(
+    animations,
+    model,
+  )
 
   useEffect(() => {
-    const animation = actions['Take 001'] ?? Object.values(actions)[0]
-    animation?.reset().play()
-    return () => animation?.stop()
+    const action =
+      actions['Take 001'] ??
+      Object.values(actions)[0]
+
+    action
+      ?.reset()
+      .fadeIn(0.2)
+      .play()
+
+    return () => {
+      action?.fadeOut(0.15)
+    }
   }, [actions])
 
-  useEffect(() => {
-    const nextMatcap = matcaps[Math.max(0, Math.min(matcapIndex - 1, matcaps.length - 1))]
-    if (!nextMatcap || transition.current.uMatcapTexture2.value === nextMatcap) return
-    gsap.killTweensOf(transition.current.uProgress)
-    transition.current.uMatcapTexture1.value = nextMatcap
-    gsap.fromTo(transition.current.uProgress, { value: 1 }, {
-      value: 0,
-      duration: 0.3,
-      onComplete: () => {
-        transition.current.uMatcapTexture2.value = nextMatcap
-        transition.current.uProgress.value = 1
-      },
-    })
-  }, [matcapIndex, matcaps])
+  // ==================================================
+  // INITIAL MATCAP
+  // ==================================================
 
-  useGSAP(() => {
+  useEffect(() => {
+    const initialMatcap =
+      transitionMatcaps[1]
+
+    if (!initialMatcap) return
+
+    transition.current.from.value =
+      initialMatcap
+
+    transition.current.to.value =
+      initialMatcap
+
+    transition.current.progress.value = 1
+  }, [transitionMatcaps])
+
+  // ==================================================
+  // MATCAP TRANSITION
+  // ==================================================
+
+  useEffect(() => {
+    const index = Math.max(
+      0,
+      Math.min(
+        matcapIndex - 1,
+        transitionMatcaps.length - 1,
+      ),
+    )
+
+    const nextMatcap =
+      transitionMatcaps[index]
+
+    if (
+      !nextMatcap ||
+      transition.current.to.value === nextMatcap
+    ) {
+      return
+    }
+
+    const uniforms = transition.current
+
+    gsap.killTweensOf(
+      uniforms.progress,
+    )
+
+    uniforms.from.value =
+      nextMatcap
+
+    gsap.fromTo(
+      uniforms.progress,
+      { value: 1 },
+      {
+        value: 0,
+        duration: 0.3,
+
+        onComplete: () => {
+          uniforms.to.value =
+            nextMatcap
+
+          uniforms.progress.value = 1
+        },
+      },
+    )
+  }, [
+    matcapIndex,
+    transitionMatcaps,
+  ])
+
+  // ==================================================
+  // POSITION + SCROLL
+  // ==================================================
+
+  useLayoutEffect(() => {
+    const target = rig.current
+
+    if (!target) return undefined
+
+    // --------------------------------------------------
+    // CENTER WOLF
+    // --------------------------------------------------
+
+    target.position.set(
+      0,
+      -0.15,
+      0,
+    )
+
+    target.rotation.set(
+      0,
+      INITIAL_ROTATION_Y,
+      0,
+    )
+
+    target.scale.setScalar(0.32)
+
+    // --------------------------------------------------
+    // SCROLL ANIMATION
+    // --------------------------------------------------
+
     const timeline = gsap.timeline({
       scrollTrigger: {
         trigger: '#section-1',
         endTrigger: '#section-3',
+
         start: 'top top',
         end: 'bottom bottom',
+
         scrub: true,
+
         invalidateOnRefresh: true,
       },
     })
+
     timeline
-      .to(model.position, { z: '-=0.75', y: '+=0.1' })
-      .to(model.rotation, { x: `+=${Math.PI / 15}` })
-      .to(model.rotation, { y: `-=${Math.PI * 2}`, duration: 3, ease: 'none' }, 0)
-      .to(model.position, { z: '+=0.6', y: '-=0.05' }, 'third')
-  }, { dependencies: [model], revertOnUpdate: true })
+      .to(
+        target.position,
+        {
+          x: 0,
+          y: -0.32,
+          z: -0.75,
 
-  useEffect(() => () => {
-    materials.dog.dispose()
-    materials.branches.dispose()
-  }, [materials])
+          duration: 1,
+        },
+        0,
+      )
 
-  return <primitive object={model} />
+      .to(
+        target.rotation,
+        {
+          x: Math.PI / 15,
+
+          y:
+            INITIAL_ROTATION_Y -
+            Math.PI * 2,
+
+          duration: 3,
+
+          ease: 'none',
+        },
+        0,
+      )
+
+      .to(
+        target.position,
+        {
+          x: 0,
+          y: -0.37,
+          z: -0.15,
+
+          duration: 1,
+        },
+        'third',
+      )
+
+    ScrollTrigger.refresh()
+
+    return () => {
+      timeline.scrollTrigger?.kill()
+      timeline.kill()
+    }
+  }, [])
+
+  // ==================================================
+  // DISPOSE
+  // ==================================================
+
+  useEffect(() => {
+    return () => {
+      materials.dog.dispose()
+      materials.branches.dispose()
+
+      materials.textures.forEach(
+        (texture) => texture.dispose(),
+      )
+
+      transitionMatcaps.forEach(
+        (texture) => texture.dispose(),
+      )
+    }
+  }, [
+    materials,
+    transitionMatcaps,
+  ])
+
+  // ==================================================
+  // RENDER
+  // ==================================================
+
+  return (
+    <group ref={rig}>
+      <primitive object={model} />
+    </group>
+  )
 }
 
-useGLTF.preload('/models/dog.drc.glb')
+useGLTF.preload(
+  '/models/dog.drc.glb',
+)
+
 export default Dog

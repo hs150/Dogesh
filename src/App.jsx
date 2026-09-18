@@ -9,20 +9,21 @@ const projects = [
   ['tomorrowland', 'Tomorrowland', 19],
   ['navy-pier', 'Navy Pier', 8],
   ['msi-chicago', 'MSI Chicago', 9],
-  ['phone', 'This Was Louise’s Phone', 12],
+  ['phone', "This Was Louise's Phone", 12],
   ['kikk', 'KIKK Festival 2018', 10],
   ['kennedy', 'The Kennedy Center', 8],
   ['opera', 'Royal Opera Of Wallonia', 13],
 ]
 
 function CanvasLoader() {
-  return <Html center><span className="canvas-loader">Loading…</span></Html>
+  return <Html center><span className="canvas-loader">Loading...</span></Html>
 }
 
 function App() {
   const [activeProject, setActiveProject] = useState(null)
   return (
-    <main>
+    <main className={activeProject ? 'is-project-active' : ''}>
+      <div className="scene-backdrop" aria-hidden="true" />
       <div className="images" aria-hidden="true">
         {projects.map(([id]) => <img className={activeProject === id ? 'visible' : ''} id={id} key={id} src={`/${id === 'tomorrowland' ? 'tommorowland' : id}.png`} alt="" />)}
       </div>

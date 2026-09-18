@@ -28,7 +28,7 @@ function cloneTexture(source, colorSpace) {
 }
 
 function Dog({ matcapIndex }) {
-  const rig = useRef()
+  const dogRef = useRef()
 
   const transition = useRef({
     from: { value: null },
@@ -54,10 +54,6 @@ function Dog({ matcapIndex }) {
       ),
     [matcaps],
   )
-
-  // ==================================================
-  // MATERIALS
-  // ==================================================
 
   const materials = useMemo(() => {
     const dogNormalMap = cloneTexture(
@@ -139,7 +135,6 @@ function Dog({ matcapIndex }) {
     return {
       dog: dogMaterial,
       branches: branchMaterial,
-
       textures: [
         dogNormalMap,
         branchMap,
@@ -153,14 +148,8 @@ function Dog({ matcapIndex }) {
     transitionMatcaps,
   ])
 
-  // ==================================================
-  // CLONE + CENTER THE ACTUAL WOLF
-  // ==================================================
-
-  const model = useMemo(() => {
-    const cloned = scene.clone(true)
-
-    cloned.traverse((child) => {
+  useMemo(() => {
+    scene.traverse((child) => {
       if (!child.isMesh) return
 
       child.material = child.name.includes('DOG')
@@ -170,45 +159,12 @@ function Dog({ matcapIndex }) {
       child.frustumCulled = false
     })
 
-    // --------------------------------------------------
-    // Find visible DOG geometry bounds
-    // --------------------------------------------------
-
-    const dogBox = new THREE.Box3()
-
-    cloned.updateMatrixWorld(true)
-
-    cloned.traverse((child) => {
-      if (!child.isMesh) return
-
-      if (child.name.includes('DOG')) {
-        dogBox.expandByObject(child)
-      }
-    })
-
-    // --------------------------------------------------
-    // Move actual wolf geometry toward its origin
-    // --------------------------------------------------
-
-    if (!dogBox.isEmpty()) {
-      const center = dogBox.getCenter(
-        new THREE.Vector3(),
-      )
-
-      cloned.position.x -= center.x
-      cloned.position.y -= center.y
-    }
-
-    return cloned
-  }, [materials, scene])
-
-  // ==================================================
-  // ANIMATION
-  // ==================================================
+    return scene
+  }, [scene, materials])
 
   const { actions } = useAnimations(
     animations,
-    model,
+    scene,
   )
 
   useEffect(() => {
@@ -226,10 +182,6 @@ function Dog({ matcapIndex }) {
     }
   }, [actions])
 
-  // ==================================================
-  // INITIAL MATCAP
-  // ==================================================
-
   useEffect(() => {
     const initialMatcap =
       transitionMatcaps[1]
@@ -244,10 +196,6 @@ function Dog({ matcapIndex }) {
 
     transition.current.progress.value = 1
   }, [transitionMatcaps])
-
-  // ==================================================
-  // MATCAP TRANSITION
-  // ==================================================
 
   useEffect(() => {
     const index = Math.max(
@@ -297,18 +245,14 @@ function Dog({ matcapIndex }) {
     transitionMatcaps,
   ])
 
-  // ==================================================
-  // POSITION + SCROLL
-  // ==================================================
-
   useLayoutEffect(() => {
-    const target = rig.current
+    const target = dogRef.current
 
-    if (!target) return undefined
+    if (!target) return
 
-    // --------------------------------------------------
-    // CENTER WOLF
-    // --------------------------------------------------
+    // ================================================
+    // WOLF POSITION
+    // ================================================
 
     target.position.set(
       0,
@@ -322,22 +266,19 @@ function Dog({ matcapIndex }) {
       0,
     )
 
-    target.scale.setScalar(0.32)
+    target.scale.setScalar(0.42)
 
-    // --------------------------------------------------
+    // ================================================
     // SCROLL ANIMATION
-    // --------------------------------------------------
+    // ================================================
 
     const timeline = gsap.timeline({
       scrollTrigger: {
         trigger: '#section-1',
         endTrigger: '#section-3',
-
         start: 'top top',
         end: 'bottom bottom',
-
         scrub: true,
-
         invalidateOnRefresh: true,
       },
     })
@@ -346,38 +287,34 @@ function Dog({ matcapIndex }) {
       .to(
         target.position,
         {
-          x: 0,
-          y: -0.32,
-          z: -0.75,
-
+          z: -0.25,
+          y: -0.05,
           duration: 1,
         },
         0,
       )
-
       .to(
         target.rotation,
         {
           x: Math.PI / 15,
-
-          y:
-            INITIAL_ROTATION_Y -
-            Math.PI * 2,
-
-          duration: 3,
-
-          ease: 'none',
+          duration: 1,
         },
         0,
       )
-
+      .to(
+        target.rotation,
+        {
+          y: INITIAL_ROTATION_Y - Math.PI,
+          duration: 1,
+        },
+        'third',
+      )
       .to(
         target.position,
         {
-          x: 0,
-          y: -0.37,
-          z: -0.15,
-
+          x: -0.35,
+          z: 0.05,
+          y: -0.1,
           duration: 1,
         },
         'third',
@@ -391,36 +328,11 @@ function Dog({ matcapIndex }) {
     }
   }, [])
 
-  // ==================================================
-  // DISPOSE
-  // ==================================================
-
-  useEffect(() => {
-    return () => {
-      materials.dog.dispose()
-      materials.branches.dispose()
-
-      materials.textures.forEach(
-        (texture) => texture.dispose(),
-      )
-
-      transitionMatcaps.forEach(
-        (texture) => texture.dispose(),
-      )
-    }
-  }, [
-    materials,
-    transitionMatcaps,
-  ])
-
-  // ==================================================
-  // RENDER
-  // ==================================================
-
   return (
-    <group ref={rig}>
-      <primitive object={model} />
-    </group>
+    <primitive
+      ref={dogRef}
+      object={scene}
+    />
   )
 }
 

@@ -8,8 +8,7 @@ section { min-height: 100vh; position: relative; z-index: 2; }
 #section-1 nav { align-items: center; display: flex; justify-content: space-between; padding: 3.5rem 2.5rem 1.5rem; }
 #section-1 .nav-elem:nth-child(2) i { color: red; }
 #section-1 .nav-elem:nth-child(3) { font-size: 1.45rem; }
-.dogstudio-logo { display: block; font-size: .8rem; font-weight: 900; letter-spacing: -.08em; line-height: .67; position: relative; transform: scaleX(1.38); transform-origin: left; }
-.dogstudio-logo sup { font-size: .36rem; left: 3.55rem; position: absolute; top: .15rem; }
+#section-1 nav svg { height: 100%; max-width: 5rem; width: 100%; }
 #section-1 .middle { display: flex; gap: var(--gap); }
 #section-1 .middle .left, #section-1 .middle .right, #section-1 .bottom .left, #section-1 .bottom .right { width: 50%; }
 #section-1 .middle .left { align-items: center; display: flex; justify-content: flex-end; padding-block: 7rem; }
@@ -27,4 +26,3 @@ main:has(#section-2 .title:hover) #canvas-elem::after, main:has(#section-2 .titl
 .images { height: 100%; left: 0; position: fixed; top: 0; width: 100%; }
 .images img { height: 100%; left: 0; object-fit: cover; opacity: 0; position: absolute; top: 0; transition: all .3s linear; width: 100%; }
 .images img.visible { opacity: 1; }
-@media (max-width: 700px) { #section-1 nav { padding: 2rem 1.25rem; } #section-1 .middle .left { padding-block: 6rem; } #section-1 h1 { font-size: clamp(3.25rem, 14vw, 5rem); } #section-1 .bottom .right { padding-right: 1rem; } #section-1 .bottom .right p { font-size: .82rem; } #section-2 .titles { margin-block: 6rem; padding-left: 1.25rem; } #section-2 .titles .title { gap: 1rem; padding-block: 1.4rem; } #section-2 .titles .title h1 { font-size: clamp(2rem, 9vw, 4.5rem); } }

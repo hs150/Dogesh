@@ -66,7 +66,7 @@ function Dog({ matcapIndex }) {
 
   const model = useMemo(() => {
     const cloned = scene.clone(true)
-    cloned.position.set(0.25, -0.55, 0)
+    cloned.position.set(0, -0.55, 0)
     cloned.rotation.set(0, Math.PI / 3.9, 0)
     cloned.traverse((child) => {
       if (!child.isMesh) return
@@ -111,8 +111,8 @@ function Dog({ matcapIndex }) {
     timeline
       .to(model.position, { z: '-=0.75', y: '+=0.1' })
       .to(model.rotation, { x: `+=${Math.PI / 15}` })
-      .to(model.rotation, { y: `-=${Math.PI}` }, 'third')
-      .to(model.position, { x: '-=0.5', z: '+=0.6', y: '-=0.05' }, 'third')
+      .to(model.rotation, { y: `-=${Math.PI * 2}`, duration: 3, ease: 'none' }, 0)
+      .to(model.position, { z: '+=0.6', y: '-=0.05' }, 'third')
   }, { dependencies: [model], revertOnUpdate: true })
 
   useEffect(() => () => {

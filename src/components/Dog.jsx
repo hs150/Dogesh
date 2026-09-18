@@ -66,7 +66,9 @@ function Dog({ matcapIndex }) {
 
   const model = useMemo(() => {
     const cloned = scene.clone(true)
-    cloned.position.set(0, -0.55, 0)
+    // Frame the visible geometry inside the hero's central content area.
+    cloned.position.set(0.18, -0.55, 0)
+    cloned.scale.setScalar(0.7)
     cloned.rotation.set(0, Math.PI / 3.9, 0)
     cloned.traverse((child) => {
       if (!child.isMesh) return
